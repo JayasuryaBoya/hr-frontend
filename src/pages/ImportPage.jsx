@@ -12,6 +12,7 @@ import ColumnPanel   from '../components/ColumnPanel';
 import MappingTable  from '../components/MappingTable';
 import PreviewTable  from '../components/PreviewTable';
 
+
 const ImportPage = () => {
   const navigate = useNavigate();
 
@@ -49,24 +50,22 @@ const ImportPage = () => {
   }, [navigate]);
 
   // ── Load tables on mount ───────────────────────────────
- useEffect(() => {
-  (async () => {
-    try {
-      const res = await getTables();
-      setTables(res.data.tables || []);
-      setAdmin(res.data.admin   || null);
-    } catch (err) {
-      if (err.response?.status === 401) {
-        // Session expired — clear and go to login
-        sessionStorage.removeItem('isLoggedIn');
-        navigate('/login', { replace: true });
-      } else {
-        setErr(err.response?.data?.error || err.message);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getTables();
+        setTables(res.data.tables || []);
+        setAdmin(res.data.admin   || null);
+      } catch (err) {
+        if (err.response?.status === 401) {
+          sessionStorage.removeItem('isLoggedIn');
+          navigate('/login', { replace: true });
+        } else {
+          setErr(err.response?.data?.error || err.message);
+        }
       }
-    }
-  })();
-}, []); // ← empty deps, runs once only
-
+    })();
+  }, [navigate]); // ✅ FIXED: was [], now [navigate]
 
   // ── Table select → load columns ────────────────────────
   const handleTableChange = async (name) => {
@@ -100,12 +99,11 @@ const ImportPage = () => {
     try {
       const res = await uploadFile(tableName, file);
       const d   = res.data;
-      setMsg(d.message   || '');
+      setMsg(d.message    || '');
       setWarns(d.warnings || []);
       setMapping(d.mapping || null);
       setPreview(d.preview || null);
     } catch (err) {
-      // Show mapping even on error (critical missing columns case)
       if (err.response?.data?.mapping) {
         setMapping(err.response.data.mapping);
       }
